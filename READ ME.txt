@@ -1,0 +1,33 @@
+Gestão de Stocks
+
+Descrição do Projeto
+	Uma aplicação desenvolvida em Python com Streamlit, desenvolvida para ajudar na gestão de stocks, compras e vendas de produtos. 
+	O objetivo principal é proporcionar ao utilizador um controlo mais rigoroso sobre o seu inventário, permitindo uma análise em tempo real de lucros e margens por categoria e produto.
+
+	Esta ferramenta foi pensada para pequenos negócios que necessitam de uma solução rápida, visual e funcional, sem a complexidade de um ERP pesado.
+
+Funcionalidades Principais
+	Gestão de Stock: Introdução, Visualização e Controlo de quantidades.
+	Registo de Compras: Gestão de faturas, fornecedores, lotes e validades.
+	Dashboard Analítico: Gráficos de investimento por categoria e Identificação dos Top 5 produtos mais lucrativos.
+	Exportação de Dados: Botão de download para Excel (.xlsx).
+	Dados: Utilizada base de dados SQLite para garantir que os dados não se perdem após o fecho da aplicação.
+
+Tecnologias Utilizadas
+	Linguagem: Python
+	Interface: Streamlit
+	Dados: Pandas & SQLite
+	Visualização: Plotly Express
+
+Instalação e Configuração
+Pré-requisitos: Instalação do Python no teu sistema.
+
+	1. Clona este repositório ou faz o download da pasta para o teu computador.
+	Abre o terminal na pasta do projeto.
+	Instala as dependências necessárias: pip install -r requirements.txt
+	Executa a aplicação: streamlit run GestaoStock_v4.py
+
+Como Utilizar
+	Registo: Utiliza a barra lateral organizada por abas para inserir novos produtos, registar faturas de fornecedores e dar saída de stock.
+	Dashboard: Acede ao separador "Dashboard" para visualizar os teus KPIs.
+	Gestão: No separador de configurações, podes gerir a base de dados ou limpar dados de teste.

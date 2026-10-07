@@ -8,7 +8,6 @@ import streamlit as st
 from mock_data import get_mock_inventory
 
 # PAGE CONFIGURATION & STYLES
-
 st.set_page_config(
     page_title="Stock Management - Hair Salon (Demo)",
     page_icon="📦",
@@ -47,7 +46,6 @@ st.markdown(
 )
 
 # DATA LOADING & SESSION STATE MANAGEMENT
-
 if "df_stocks" not in st.session_state:
     st.session_state.df_stocks = get_mock_inventory()
 
@@ -116,14 +114,13 @@ def convert_to_excel(df):
 
 
 # HEADER
-
 st.title("📦 Inventory Management System — Hair Salon")
 st.caption("Portfolio Demonstration Version (Mock Data)")
 
 # SIDEBAR (DEMO OPERATIVE ACTIONS)
-
 st.sidebar.title("Settings (Demo Mode)")
 
+# 1: RESTOCK
 with st.sidebar.expander("📥 Restock (Invoice / Purchase)", expanded=False):
     with st.form(key="new_purchase"):
         inv_number = st.text_input("Invoice №", value="INV 2026/999")
@@ -163,10 +160,11 @@ if submitted:
     st.sidebar.success("Stock entry logged in memory!")
     st.rerun()
 
+# 2: USAGE / SALES
 with st.sidebar.expander("📤 Stock Usage / Sales"):
     if not df_stocks.empty:
         prod_usage = st.selectbox(
-            "Product:", df_stocks["product_name"].unique()
+            "Product:", df_stocks["product_name"].unique(), key="usage_prod"
         )
         qty_usage = st.number_input("Qty to Remove:", min_value=1, value=1)
         if st.button("Confirm Stock Out"):
@@ -180,8 +178,24 @@ with st.sidebar.expander("📤 Stock Usage / Sales"):
             st.success(f"Registered stock reduction for {prod_usage}!")
             st.rerun()
 
-# KPI METRICS / FINANCIAL SUMMARY
+# 3: DELETE PRODUCT
+with st.sidebar.expander("🗑️ Delete Product"):
+    if not df_stocks.empty:
+        prod_to_delete = st.selectbox(
+            "Product to remove:",
+            df_stocks["product_name"].unique(),
+            key="del_prod",
+        )
+        if st.button("Delete Permanently"):
+            st.session_state.df_stocks = st.session_state.df_stocks[
+                st.session_state.df_stocks["product_name"] != prod_to_delete
+            ].reset_index(drop=True)
+            st.sidebar.error(f"Removed {prod_to_delete} from inventory!")
+            st.rerun()
+    else:
+        st.sidebar.write("No products available to delete.")
 
+# KPI METRICS / FINANCIAL SUMMARY
 total_products = len(df_stocks)
 alerts_count = len(
     df_stocks[df_stocks["stock_quantity"] <= df_stocks["min_stock"]]
@@ -203,155 +217,6 @@ col4.metric("Potential Profit", f"{potential_profit:.2f} €")
 st.divider()
 
 # NAVIGATION TABS
-
 (
     tab_stock,
     tab_margins,
-    tab_batches,
-    tab_movements,
-    tab_purchases,
-    tab_dashboard,
-) = st.tabs([
-    "📦 Available Stock",
-    "💰 Prices & Margins",
-    "🔍 Batches & Expiry",
-    "📋 Usage History",
-    "📥 Purchase History",
-    "📊 Analytics Dashboard",
-])
-
-# --- TAB 1: AVAILABLE STOCK ---
-with tab_stock:
-    st.subheader("📋 Inventory & Stock Control")
-
-    categories = ["All"] + list(df_stocks["category"].unique())
-    selected_cat = st.selectbox("Filter by Category:", categories)
-
-    df_display = df_stocks.copy()
-    if selected_cat != "All":
-        df_display = df_display[df_display["category"] == selected_cat]
-
-    def highlight_stock(row):
-        qty = row.get("stock_quantity", 0)
-        min_st = row.get("min_stock", 3)
-        if qty == 0:
-            return ["background-color: #ffcccc; color: black"] * len(row)
-        elif qty <= min_st:
-            return ["background-color: #ffffcc; color: black"] * len(row)
-        return [""] * len(row)
-
-    try:
-        st.dataframe(
-            df_display.style.apply(highlight_stock, axis=1),
-            use_container_width=True,
-            hide_index=True,
-        )
-    except Exception:
-        st.dataframe(df_display, use_container_width=True, hide_index=True)
-
-    st.caption("🔴 Red: Out of Stock | 🟡 Yellow: Low Stock Alert")
-
-    st.download_button(
-        label="📥 Download Stock Data (Excel)",
-        data=convert_to_excel(df_display),
-        file_name=f"Stock_{datetime.today().strftime('%Y-%m-%d')}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-
-# --- TAB 2: PRICES & MARGINS ---
-with tab_margins:
-    st.subheader("💰 Price & Margin Analysis")
-    df_fin = df_stocks.copy()
-    df_fin["unit_margin"] = df_fin["selling_price"] - df_fin["cost_price"]
-    df_fin["total_profit"] = df_fin["unit_margin"] * df_fin["stock_quantity"]
-
-    st.dataframe(
-        df_fin[[
-            "product_name",
-            "category",
-            "cost_price",
-            "selling_price",
-            "unit_margin",
-            "total_profit",
-        ]],
-        use_container_width=True,
-        column_config={
-            "product_name": "Product",
-            "category": "Category",
-            "cost_price": st.column_config.NumberColumn(
-                "Cost Price (€)", format="%.2f €"
-            ),
-            "selling_price": st.column_config.NumberColumn(
-                "Selling Price (€)", format="%.2f €"
-            ),
-            "unit_margin": st.column_config.NumberColumn(
-                "Unit Margin (€)", format="%.2f €"
-            ),
-            "total_profit": st.column_config.NumberColumn(
-                "Potential Profit (€)", format="%.2f €"
-            ),
-        },
-        hide_index=True,
-    )
-
-# --- TAB 3: BATCHES & EXPIRY ---
-with tab_batches:
-    st.subheader("🔍 Batches & Expiry Dates")
-    st.dataframe(
-        st.session_state.df_invoices[[
-            "Product",
-            "Supplier",
-            "Invoice №",
-            "Batch",
-            "Expiry Date",
-        ]],
-        use_container_width=True,
-        hide_index=True,
-    )
-
-# --- TAB 4: USAGE HISTORY ---
-with tab_movements:
-    st.subheader("📋 Stock Output History")
-    st.dataframe(
-        st.session_state.df_movements,
-        use_container_width=True,
-        hide_index=True,
-    )
-
-# --- TAB 5: PURCHASE HISTORY ---
-with tab_purchases:
-    st.subheader("📥 Purchase & Invoicing Log")
-    st.dataframe(
-        st.session_state.df_invoices,
-        use_container_width=True,
-        hide_index=True,
-    )
-
-# --- TAB 6: VISUAL DASHBOARD ---
-with tab_dashboard:
-    st.subheader("📊 Analytics & Visual Dashboard")
-    c1, c2 = st.columns(2)
-
-    with c1:
-        fig_pie = px.pie(
-            df_stocks,
-            values="stock_quantity",
-            names="category",
-            title="Stock Volume by Category",
-            hole=0.4,
-        )
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-    with c2:
-        df_stocks["investment"] = (
-            df_stocks["stock_quantity"] * df_stocks["cost_price"]
-        )
-        fig_bar = px.bar(
-            df_stocks,
-            x="product_name",
-            y="investment",
-            color="category",
-            labels={"product_name": "Product", "investment": "Total Value (€)"},
-            title="Capital Tied Up per Product (€)",
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
